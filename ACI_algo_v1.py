@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-def ACI_precompute_q(dt_Xt, dt_Yt, dt_Ypredt, dt_Scorest, info_fun, Error_func, gamma, alpha=.1, q0=1, reac0=0):
+def infoACI_precompute_q(dt_Xt, dt_Yt, dt_Ypredt, dt_Scorest, info_fun, Error_func, gamma, alpha=.1, q0=1, reac0=0):
     
     T = len(dt_Yt['value'])
     dates = dt_Yt.index
@@ -12,12 +12,11 @@ def ACI_precompute_q(dt_Xt, dt_Yt, dt_Ypredt, dt_Scorest, info_fun, Error_func, 
     ll = 0
 
     # Precompute scores (not allowed in 'real' online)
-    # Scores_test = Score_func(dt_Ypredt['value'], dt_Yt['value'], dt_Xt.values)
     Scores_test = dt_Scorest.values
     
     for r in range(1, T):
         # Get current point and score (at time r)
-        Xtest_temp = dt_Xt.value[r]
+        Xtest_temp = dt_Xt.values[r]
         Ytest_temp = dt_Yt['value'][r]
         Ypredtest_temp = dt_Ypredt['value'][r]
         scores_test = Scores_test[r]
@@ -26,12 +25,12 @@ def ACI_precompute_q(dt_Xt, dt_Yt, dt_Ypredt, dt_Scorest, info_fun, Error_func, 
         reac_t = err_t*(Qt_list[r-1] >= reac0)*1 + (Qt_list[r-1] < reac0)*1
         
         if info_fun(Ypredtest_temp, Ytest_temp, Xtest_temp, scores_test, Qt_list[r-1]):
+            ll += 1
             info_list.append(1)
+            qt_new = Qt_list[r-1] + gamma[ll-1]*( reac_t  - alpha)
         else:
             info_list.append(0)
-
-        ll += 1
-        qt_new = Qt_list[r-1] + gamma[ll-1]*( reac_t  - alpha)
+            qt_new = Qt_list[r-1]
 
         Qt_list.append(qt_new)
         errt_list.append(err_t)
